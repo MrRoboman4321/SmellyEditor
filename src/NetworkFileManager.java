@@ -19,7 +19,7 @@ public class NetworkFileManager {
 
     }
 
-    public static void sendFile(String localFile, String remoteFile){
+    public String sendFile(String localFile, String remoteFile){
         /*if(arg.length!=2){
             System.err.println("usage: java ScpTo file1 user@remotehost:file2");
             System.exit(-1);
@@ -107,14 +107,18 @@ public class NetworkFileManager {
 
             channel.disconnect();
             session.disconnect();
+
+            return "Success!";
         }
         catch(Exception e){
             System.out.println(e);
             try{if(fis!=null)fis.close();}catch(Exception ee){}
+
+            return "Failed, check stack trace";
         }
     }
 
-    public void recvFile(String localFile, String remoteFile){
+    public String recvFile(String localFile, String remoteFile){
 
         FileOutputStream fos=null;
         try{
@@ -214,10 +218,14 @@ public class NetworkFileManager {
             }
 
             session.disconnect();
+
+            return "Success!";
         }
         catch(Exception e){
             System.out.println(e);
             try{if(fos!=null)fos.close();}catch(Exception ee){}
+
+            return "Failed, check stack trace";
         }
     }
 

@@ -1,12 +1,11 @@
-import com.jcraft.jsch.*;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import javafx.application.Application;
-import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
-import javafx.geometry.Bounds;
 import javafx.geometry.Insets;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.TextArea;
+import javafx.scene.control.TextField;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.scene.text.Text;
@@ -18,11 +17,14 @@ import java.nio.file.Paths;
 
 public class Main extends Application
 {
-    Stage window;
+    private Stage window;
     private Text textHolder = new Text();
     private TextArea textArea = new TextArea();
     private VBox vBox = new VBox();
     private HBox hBox = new HBox();
+
+    private Text feedbackText = new Text();
+    private TextField remoteFile = new TextField();
 
     private NetworkFileManager fileManager = new NetworkFileManager();
 
@@ -42,6 +44,9 @@ public class Main extends Application
 
         hBox.setMinWidth(vBox.getMinWidth());
 
+        remoteFile.setPromptText("Full remote file path");
+        remoteFile.setMinWidth(100);
+
         Button readButton = new Button("Read");
         readButton.setOnAction(e -> readButtonClicked());
 
@@ -50,7 +55,8 @@ public class Main extends Application
 
         hBox.setPadding(new Insets(10));
         hBox.setSpacing(10);
-        hBox.getChildren().addAll(readButton, writeButton);
+        hBox.setMaxHeight(45);
+        hBox.getChildren().addAll(remoteFile, readButton, writeButton, feedbackText);
 
         textHolder.textProperty().bind(textArea.textProperty());
 
@@ -68,10 +74,14 @@ public class Main extends Application
     public void updateHeight(ObservableValue<? extends Number> observable, Number oldHeight, Number newHeight)
     {
         textArea.setPrefHeight(vBox.getHeight() + 20);
+        hBox.setMaxHeight(45);
     }
 
     public void writeButtonClicked()
     {
+        feedbackText.setText("");
+
+        //Write the current text to a file
         try (PrintWriter out = new PrintWriter("output.txt")) {
             out.println(textArea.getText());
         }
@@ -80,25 +90,51 @@ public class Main extends Application
             System.out.println("File not found!");
         }
 
-        writeFile();
+        //Send the file
+        String remote = remoteFile.getText();
+
+        if(remote.equals(""))
+        {
+            feedbackText.setText("Please enter a remote file path");
+            return;
+        }
+
+        String res = fileManager.sendFile("output.txt", remote);
+
+        feedbackText.setText(res);
     }
 
     public void readButtonClicked()
     {
-        fileManager.recvFile("input.txt", "/U/testOutput.txt");
+        feedbackText.setText("");
 
+        String remote = remoteFile.getText();
+
+        if(remote.equals(""))
+        {
+            feedbackText.setText("Please enter a remote file path");
+            return;
+        }
+
+        //Get the file
+        String res = fileManager.recvFile("input.txt", remote);
+
+
+        feedbackText.setText(res);
+
+        //Read the file to the window
         try {
             byte[] encoded = Files.readAllBytes(Paths.get("input.txt"));
-            textArea.setText(new String(encoded, "utf-8"));
+
+            ObjectMapper mapper = new ObjectMapper();
+            Object obj = mapper.readValue(new String(encoded, "utf-8"), Object.class);
+            String out = mapper.writerWithDefaultPrettyPrinter().writeValueAsString(obj);
+
+            textArea.setText(out);
         }
         catch(IOException e)
         {
             System.out.println(e);
         }
-    }
-
-    public void writeFile()
-    {
-        fileManager.sendFile("output.txt", "/U/testOutput.txt");
     }
 }

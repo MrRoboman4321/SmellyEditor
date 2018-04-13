@@ -60,7 +60,6 @@ public class Main extends Application
 
         textHolder.textProperty().bind(textArea.textProperty());
 
-
         vBox.getChildren().addAll(textArea, hBox);
 
         Scene scene = new Scene(vBox);
@@ -69,6 +68,9 @@ public class Main extends Application
         window.heightProperty().addListener(this::updateHeight);
 
         window.show();
+
+        Files.deleteIfExists(Paths.get("output.txt"));
+        Files.deleteIfExists(Paths.get("input.txt"));
     }
 
     public void updateHeight(ObservableValue<? extends Number> observable, Number oldHeight, Number newHeight)
@@ -123,7 +125,8 @@ public class Main extends Application
         feedbackText.setText(res);
 
         //Read the file to the window
-        try {
+        try
+        {
             byte[] encoded = Files.readAllBytes(Paths.get("input.txt"));
 
             ObjectMapper mapper = new ObjectMapper();
